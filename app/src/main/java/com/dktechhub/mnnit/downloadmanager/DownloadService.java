@@ -185,6 +185,7 @@ public class DownloadService extends Service {
                     Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
                 }
 
+
                 break;
             case PENDING:
 
