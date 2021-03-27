@@ -1,7 +1,9 @@
 package com.dktechhub.mnnit.downloadmanager;
 
+import android.app.ActivityManager;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -27,29 +29,36 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements DownloadService.ObserverActivityInterface {
     public DownloadService downloadService;
     DownloadItemAdapter downloadItemAdapter;
     boolean isBound = false;
-    DatabaseWorker worker;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        if(!isDownloadServiceRunning()){
+        Intent intent = new Intent(getBaseContext(),DownloadService.class);
+        startService(intent);}
+        if(downloadService==null) {
+            bindService(new Intent(getBaseContext(), DownloadService.class), downloadServiceConnection, BIND_AUTO_CREATE);
+        }
         downloadItemAdapter=new DownloadItemAdapter(new DownloadItemAdapter.DownloadItemAdapterListener() {
             @Override
             public void onButtonClicked(DownloadItem downloadItem) {
-                manageAction(downloadItem);
+                downloadService.manageAction(downloadItem);
             }
         });
-        RecyclerView downloadRecyclerView = (RecyclerView) findViewById(R.id.downloadRecyclerView);
+        //downloadItemAdapter.mlist=downloadService.items;
+        RecyclerView downloadRecyclerView = findViewById(R.id.downloadRecyclerView);
         downloadRecyclerView.setAdapter(downloadItemAdapter);
         downloadRecyclerView.setLayoutManager(new LinearLayoutManager(getBaseContext()));
-        worker=new DatabaseWorker(this,"DownloadManager",null,1);
-        loadFromDatabase();
+        //worker=new DatabaseWorker(this,"DownloadManager",null,1);
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> showDialog());
         /*
@@ -60,8 +69,7 @@ public class MainActivity extends AppCompatActivity {
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Intent intent = new Intent(getBaseContext(),DownloadService.class);
-                //startService(intent);
+
                 downloadItem.progress=50;
                 downloadItem.status= DownloadItem.DownloadStatus.COMPLETED;
                 worker.updateDownload(downloadItem);
@@ -164,8 +172,8 @@ public class MainActivity extends AppCompatActivity {
             public void analyseSuccess(DownloadItem downloadItem2) {
                 progressDialog.cancel();
                 Toast.makeText(MainActivity.this, "Success", Toast.LENGTH_SHORT).show();
-               int id= worker.addDownload(downloadItem2);
-               loadFromDatabase();
+               //worker.addDownload(downloadItem2);
+               downloadService.addNewTask(downloadItem2);
             }
 
             @Override
@@ -200,12 +208,8 @@ public class MainActivity extends AppCompatActivity {
         analyser.execute();
     }
 
-    public void loadFromDatabase()
-    {
-        this.downloadItemAdapter.mlist=worker.loadItems();
-        downloadItemAdapter.notifyDataSetChanged();
-    }
-    public void manageAction(DownloadItem downloadItem)
+
+    /*public void manageAction(DownloadItem downloadItem)
     {
         //Toast.makeText(this, downloadItem.name, Toast.LENGTH_SHORT).show();
         if(downloadItem.status== DownloadItem.DownloadStatus.COMPLETED)
@@ -231,6 +235,8 @@ public class MainActivity extends AppCompatActivity {
             });
         }
     }
+
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -240,6 +246,8 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(getBaseContext(),DownloadService.class);
+            stopService(intent);
             return true;
         }
 
@@ -253,25 +261,46 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             DownloadService.DownloadBinder binderBridge = (DownloadService.DownloadBinder) service;
             downloadService=binderBridge.getService();
+            downloadItemAdapter.mlist=downloadService.getItems();
+            downloadItemAdapter.notifyDataSetChanged();
+            downloadService.setObserverActivityInterface(MainActivity.this);
             isBound=true;
+            Toast.makeText(MainActivity.this, "service connected", Toast.LENGTH_SHORT).show();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            downloadService.setObserverActivityInterface(null);
             isBound=false;
             downloadService=null;
+            Toast.makeText(MainActivity.this, "service disconnected", Toast.LENGTH_SHORT).show();
         }
     };
-
+    public boolean isDownloadServiceRunning()
+    {   String serviceName=DownloadService.class.getName();
+        final ActivityManager activityManager =(ActivityManager) getBaseContext().getSystemService(Context.ACTIVITY_SERVICE);
+        final List<ActivityManager.RunningServiceInfo> runningServiceInfos=activityManager.getRunningServices(Integer.MAX_VALUE);
+        for(ActivityManager.RunningServiceInfo temp :runningServiceInfos)
+        {
+            if(temp.service.getClassName().equals(serviceName))
+                return true;
+        }
+        return false;
+    }
     @Override
     protected void onPause() {
         super.onPause();
-        worker.saveToDatabase(downloadItemAdapter.mlist);
+
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        worker.saveToDatabase(downloadItemAdapter.mlist);
+
+    }
+
+    @Override
+    public void onItemsUpdate(ArrayList<DownloadItem> items) {
+        downloadItemAdapter.notifyDataSetChanged();
     }
 }

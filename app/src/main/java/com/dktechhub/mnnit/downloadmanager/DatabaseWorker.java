@@ -21,7 +21,7 @@ public class DatabaseWorker extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String CREATE_TABLE = "CREATE TABLE if Not exists Downloads (id INT,name TEXT,progress INT,path TEXT,size TEXT,type TEXT,status TEXT,url TEXT, PRIMARY KEY(id))";
+        String CREATE_TABLE = "CREATE TABLE if Not exists Downloads (id INT,name TEXT,progress INT,path TEXT,size TEXT,type TEXT,status TEXT,url TEXT,mime TEXT, PRIMARY KEY(id))";
         db.execSQL(CREATE_TABLE);
     }
 
@@ -40,6 +40,7 @@ public class DatabaseWorker extends SQLiteOpenHelper {
         contentValues.put("path",downloadItem.path);
         contentValues.put("size",downloadItem.size);
         contentValues.put("url",downloadItem.url);
+        contentValues.put("mime",downloadItem.mime);
         contentValues.put("status", String.valueOf(downloadItem.status));
         contentValues.put("id",id);
         contentValues.put("type", String.valueOf(downloadItem.type));
@@ -58,6 +59,7 @@ public class DatabaseWorker extends SQLiteOpenHelper {
                 DownloadItem downloadItem=new DownloadItem(cursor.getString(1),cursor.getString(3),cursor.getString(4), DownloadItem.DownloadStatus.valueOf(cursor.getString(6)), DownloadItem.DownloadType.valueOf(cursor.getString(5)));
                 downloadItem.id=cursor.getInt(0);
                 downloadItem.url=cursor.getString(7);
+                downloadItem.mime=cursor.getString(8);
                 downloadItem.progress=cursor.getInt(2);
                 all.add(downloadItem);
             } while (cursor.moveToNext());

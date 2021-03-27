@@ -31,9 +31,16 @@ public class DownloadTaskExecuter extends AsyncTask<Void,Integer,Void> {
             {   OutputStream outputStream;
                 if(resCode==206){
                     outputStream=new FileOutputStream(outfile,true);
-                }else
-                    outputStream=new FileOutputStream(outfile);
-                    Log.d("TAG","resuming Download///");
+                }else {
+                    if(connection.getContentLength()==readtotal)
+                    {   publishProgress(100);
+                        downloadItem.status= DownloadItem.DownloadStatus.COMPLETED;
+                        success=true;
+                        return null;}
+                    outputStream = new FileOutputStream(outfile);
+                    Log.d("TAG", "resuming Download///");
+
+                }
                int totalLength=connection.getContentLength()+(int)readtotal;
                 Log.d("TAG","Total:"+totalLength+" Existing:"+readtotal);
                 InputStream inputStream = connection.getInputStream();
@@ -74,6 +81,7 @@ public class DownloadTaskExecuter extends AsyncTask<Void,Integer,Void> {
     protected void onPreExecute() {
         super.onPreExecute();
         downloadItem.status= DownloadItem.DownloadStatus.DOWNLOADING;
+        downloadStatusListener.updateStatus(DownloadItem.DownloadStatus.DOWNLOADING);
     }
 
     @Override
@@ -91,7 +99,7 @@ public class DownloadTaskExecuter extends AsyncTask<Void,Integer,Void> {
     @Override
     protected void onCancelled() {
         super.onCancelled();
-        downloadStatusListener.updateStatus(DownloadItem.DownloadStatus.CANCELLED);
+        downloadStatusListener.updateStatus(DownloadItem.DownloadStatus.PAUSED);
     }
 
     @Override

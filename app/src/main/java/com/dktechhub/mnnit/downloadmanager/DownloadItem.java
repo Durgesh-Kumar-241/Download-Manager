@@ -4,13 +4,15 @@ public class DownloadItem {
     DownloadTaskExecuter downloadTaskExecuter;
     String name;
     String size;
-    String path;
+    String path,mime;
     String url;
     Observer observer;
     DownloadStatus status;
     DownloadType type;
     int progress;
     int id;
+    //private Observer observer;
+
     public DownloadItem(String name,String path,String size)
     {
         this.name=name;
@@ -28,11 +30,12 @@ public class DownloadItem {
         this.type=type;
     }
     public enum DownloadStatus{
-            PENDING,COMPLETED,FAILED,DOWNLOADING,CANCELLED
+            PENDING,COMPLETED,FAILED,DOWNLOADING,CANCELLED,PAUSED
     }
     public enum DownloadType{
         AUDIO,VIDEO,DOCUMENT
     }
+
     public void startDownloading(Observer observer)
     {   this.observer=observer;
         if(this.downloadTaskExecuter==null||downloadTaskExecuter.isCancelled()) {
@@ -68,4 +71,6 @@ public class DownloadItem {
         void notifyParent();
         void notifyError(Exception e);
     }
+
+
 }

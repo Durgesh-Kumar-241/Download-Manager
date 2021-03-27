@@ -51,6 +51,8 @@ public class LinkAnalyser extends AsyncTask {
                 publishProgress(75);
                 this.downloadItem=new DownloadItem(name,path,size,status,type);
                 this.downloadItem.url=this.url;
+                publishProgress(90);
+                this.downloadItem.mime=connection.getContentType();
                 publishProgress(100);
                 this.success=true;
             }
