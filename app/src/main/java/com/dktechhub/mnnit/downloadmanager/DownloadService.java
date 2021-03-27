@@ -12,6 +12,9 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
+
+import java.io.File;
 import java.util.ArrayList;
 
 public class DownloadService extends Service {
@@ -170,7 +173,10 @@ public class DownloadService extends Service {
             case COMPLETED:
                 Toast.makeText(this, "opening"+downloadItem.name, Toast.LENGTH_SHORT).show();
                 Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                File f =new File(downloadItem.path);
+                Uri uri = Uri.fromFile(f);
+                //i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_ACTIVITY_NEW_TASK);
                 i.setDataAndType(Uri.parse(downloadItem.path),downloadItem.mime);
                 try{
                     startActivity(i);
